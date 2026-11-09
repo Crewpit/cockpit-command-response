@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title translate="yes">Command Response</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <script src="theme.js"></script>
+
+    <link href="vendor/patternfly/patternfly.min.css" type="text/css" rel="stylesheet" />
+    <link href="cockpit-glue.css" type="text/css" rel="stylesheet" />
+    <link href="index.css" type="text/css" rel="stylesheet" />
+</head>
+
+<body class="pf-v6-m-tabular-nums">
+    <div class="ct-page-fill" id="app">
+        <div class="pf-v6-c-page no-masthead-sidebar">
+            <div class="pf-v6-c-page__main-container">
+                <!-- Menu bar, built by App.menu.mount() from MENU in index.js -->
+                <nav id="app-menu" class="app-menubar"></nav>
+
+                <main class="pf-v6-c-page__main" tabindex="-1">
+
+                    <section class="pf-v6-c-page__main-section">
+                        <!-- One card for the page (same layout as Crewdriver): title header, current pane as body, status footer. -->
+                        <div class="pf-v6-c-card">
+                            <div class="pf-v6-c-card__header">
+                                <div class="pf-v6-c-card__header-main">
+                                    <div class="pf-v6-c-card__title">
+                                        <h1 class="pf-v6-c-card__title-text pf-v6-c-title pf-m-2xl" translate="yes">Command Response</h1>
+                                    </div>
+                                    <p class="app-muted" translate="yes">Run shell commands on this machine and keep their output.</p>
+                                </div>
+                            </div>
+                            <hr class="pf-v6-c-divider" />
+                            <div class="pf-v6-c-card__body">
+
+                    <!-- Run -->
+                    <div id="pane-run" class="app-pane" hidden>
+
+                        <div class="app-block">
+                            <ul class="pf-v6-c-list ccr-disclaimer">
+                                <li translate="yes">
+                                    <strong class="ccr-danger-text">Nothing you type is evaluated, filtered, or confirmed.</strong>
+                                    Commands run exactly as typed, as whichever user this
+                                    Cockpit session is logged in as, via <code>cockpit.spawn()</code>
+                                    and your chosen shell (Settings → Shell)
+                                    - if you type <code>rm -rf /</code>, it runs <code>rm -rf /</code>.
+                                </li>
+                                <li translate="yes">
+                                    History and predefined commands persist under
+                                    <code>~/.cockpit/command-response/</code> across logins.
+                                    <strong class="ccr-warning-text">Incognito runs do not</strong> -
+                                    their output disappears the moment you refresh or log out.
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div id="predefined-section" class="app-block" hidden>
+                            <div class="app-block__header">
+                                <h2 class="app-block__title" translate="yes">Predefined commands</h2>
+                            </div>
+                            <div class="pf-v6-l-flex pf-m-align-items-center">
+                                <div class="pf-v6-l-flex__item pf-m-flex-1">
+                                    <span class="pf-v6-c-form-control"><select id="predefined-select"></select><span class="pf-v6-c-form-control__utilities"><span class="pf-v6-c-form-control__toggle-icon"><svg viewBox="0 0 320 512" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M31.3 192h257.3c17.8 0 26.7 21.5 14.1 34.1L174.1 354.8c-7.8 7.8-20.5 7.8-28.3 0L17.2 226.1C4.6 213.5 13.5 192 31.3 192z"/></svg></span></span></span>
+                                </div>
+                                <button type="button" id="predefined-run-btn" class="pf-v6-c-button pf-m-primary" translate="yes">
+                                    Run
+                                </button>
+                                <button type="button" id="predefined-incognito-btn" class="pf-v6-c-button pf-m-secondary" translate="yes">
+                                    Incognito Run
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="app-block">
+                            <div class="app-block__header">
+                                <h2 class="app-block__title" translate="yes">Manual command</h2>
+                            </div>
+                            <form id="command-form">
+                                <div class="pf-v6-l-flex pf-m-align-items-center">
+                                    <div class="pf-v6-l-flex__item pf-m-flex-1">
+                                        <span class="pf-v6-c-form-control"><input type="text" id="command-input"
+                                               placeholder="e.g. systemctl status sshd" autocomplete="off"
+                                               spellcheck="false" autofocus /></span>
+                                    </div>
+                                    <button type="submit" id="run-btn" class="pf-v6-c-button pf-m-primary" translate="yes">
+                                        Run
+                                    </button>
+                                    <button type="button" id="incognito-btn" class="pf-v6-c-button pf-m-secondary" translate="yes">
+                                        Incognito Run
+                                    </button>
+                                    <button type="button" id="clear-btn" class="pf-v6-c-button pf-m-link" translate="yes">
+                                        Clear History
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="app-block">
+                            <div class="app-block__header">
+                                <h2 class="app-block__title" translate="yes">History</h2>
+                            </div>
+                            <span class="pf-v6-c-form-control pf-v6-u-mb-sm"><input type="text" id="history-filter"
+                                   placeholder="Filter history by command or output…" autocomplete="off" spellcheck="false" /></span>
+                            <p id="history-no-match" class="app-muted" hidden translate="yes">
+                                No history entries match that filter.
+                            </p>
+                            <div id="history" class="pf-v6-l-stack pf-m-gutter">
+                                <p id="history-empty" class="app-muted" translate="yes">
+                                    No commands run yet.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Settings: Predefined Commands -->
+                    <div id="pane-settings" class="app-pane" hidden>
+
+                        <div class="app-block">
+                            <div class="app-block__header">
+                                <h2 class="app-block__title" id="manage-form-title" translate="yes">Add a predefined command</h2>
+                            </div>
+                            <form id="manage-form" class="pf-v6-c-form pf-m-horizontal app-settings">
+                                <div class="pf-v6-c-form__group">
+                                    <div class="pf-v6-c-form__group-label">
+                                        <label class="pf-v6-c-form__label" for="manage-name-input">
+                                            <span class="pf-v6-c-form__label-text" translate="yes">Pretty name</span>
+                                        </label>
+                                    </div>
+                                    <div class="pf-v6-c-form__group-control">
+                                        <span class="pf-v6-c-form-control"><input type="text" id="manage-name-input"
+                                               placeholder="e.g. Restart nginx" autocomplete="off" /></span>
+                                    </div>
+                                </div>
+                                <div class="pf-v6-c-form__group">
+                                    <div class="pf-v6-c-form__group-label">
+                                        <label class="pf-v6-c-form__label" for="manage-command-input">
+                                            <span class="pf-v6-c-form__label-text" translate="yes">Command</span>
+                                        </label>
+                                    </div>
+                                    <div class="pf-v6-c-form__group-control">
+                                        <span class="pf-v6-c-form-control"><input type="text" id="manage-command-input"
+                                               placeholder="e.g. systemctl restart nginx" autocomplete="off" spellcheck="false" /></span>
+                                    </div>
+                                </div>
+                                <div class="pf-v6-c-form__group pf-m-action">
+                                    <div class="pf-v6-c-form__group-control">
+                                        <div class="pf-v6-c-form__actions">
+                                            <button type="submit" id="manage-save-btn" class="pf-v6-c-button pf-m-primary" translate="yes">
+                                                Add
+                                            </button>
+                                            <button type="button" id="manage-cancel-btn" class="pf-v6-c-button pf-m-link" hidden translate="yes">
+                                                Cancel Edit
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="app-block">
+                            <div class="app-block__header">
+                                <h2 class="app-block__title" translate="yes">Your predefined commands</h2>
+                            </div>
+                            <div id="manage-list" class="pf-v6-c-data-list"></div>
+                            <p id="manage-empty" class="app-muted" translate="yes">
+                                No predefined commands yet - add one above.
+                            </p>
+                        </div>
+
+                    </div>
+
+                    <!-- Settings: Shell -->
+                    <div id="pane-shell-settings" class="app-pane" hidden>
+                        <div class="app-block">
+                            <div class="app-block__header">
+                                <h2 class="app-block__title" translate="yes">Default shell</h2>
+                            </div>
+                            <p class="app-muted pf-v6-u-mb-md" translate="yes">
+                                Commands are run as <code>&lt;shell&gt; -c "&lt;command&gt;"</code>. The list shows the
+                                shells installed on this machine (from <code>/etc/shells</code>).
+                            </p>
+                            <form id="shell-form" class="pf-v6-c-form pf-m-horizontal app-settings" novalidate>
+                                <div class="pf-v6-c-form__group">
+                                    <div class="pf-v6-c-form__group-label">
+                                        <label class="pf-v6-c-form__label" for="shell-select">
+                                            <span class="pf-v6-c-form__label-text" translate="yes">Shell</span>
+                                        </label>
+                                    </div>
+                                    <div class="pf-v6-c-form__group-control">
+                                        <span class="pf-v6-c-form-control"><select id="shell-select"></select><span class="pf-v6-c-form-control__utilities"><span class="pf-v6-c-form-control__toggle-icon"><svg viewBox="0 0 320 512" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M31.3 192h257.3c17.8 0 26.7 21.5 14.1 34.1L174.1 354.8c-7.8 7.8-20.5 7.8-28.3 0L17.2 226.1C4.6 213.5 13.5 192 31.3 192z"/></svg></span></span></span>
+                                    </div>
+                                </div>
+                                <div id="shell-custom-group" class="pf-v6-c-form__group" hidden>
+                                    <div class="pf-v6-c-form__group-label">
+                                        <label class="pf-v6-c-form__label" for="shell-custom-input">
+                                            <span class="pf-v6-c-form__label-text" translate="yes">Custom shell</span>
+                                        </label>
+                                    </div>
+                                    <div class="pf-v6-c-form__group-control">
+                                        <span class="pf-v6-c-form-control"><input type="text" id="shell-custom-input"
+                                               placeholder="e.g. /usr/bin/zsh -l" autocomplete="off" spellcheck="false" /></span>
+                                        <div class="pf-v6-c-helper-text"><div class="pf-v6-c-helper-text__item">
+                                            <span id="shell-custom-help" class="pf-v6-c-helper-text__item-text" translate="yes">A program name or path, optionally followed by arguments (split on spaces, no quoting). The command is appended after <code>-c</code>.</span>
+                                        </div></div>
+                                    </div>
+                                </div>
+                                <div class="pf-v6-c-form__group pf-m-action">
+                                    <div class="pf-v6-c-form__group-control">
+                                        <div class="pf-v6-c-form__actions">
+                                            <button type="submit" id="shell-save-btn" class="pf-v6-c-button pf-m-primary" translate="yes">
+                                                Save
+                                            </button>
+                                        </div>
+                                        <div id="shell-note" class="app-muted"></div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Settings: History Limits -->
+                    <div id="pane-history-settings" class="app-pane" hidden>
+                        <div class="app-block">
+                            <div class="app-block__header">
+                                <h2 class="app-block__title" translate="yes">History limits</h2>
+                            </div>
+                            <div id="history-settings-container"></div>
+                        </div>
+                    </div>
+
+                            </div>
+                            <hr class="pf-v6-c-divider" />
+                            <div id="shell-footer" class="pf-v6-c-card__footer app-muted" aria-live="polite" translate="yes">&nbsp;</div>
+                        </div>
+                    </section>
+
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- Served by cockpit-ws itself (base1 package), not shipped in this package -->
+    <script src="../base1/cockpit.js"></script>
+    <script src="functions.js"></script>
+    <script src="index.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+    "requires": {
+        "cockpit": "175"
+    },
+    "tools": {
+        "index": {
+            "label": "Command Response",
+            "order": 110,
+            "keywords": [
+                { "matches": ["shell", "command", "exec", "run", "terminal", "history", "favorites", "predefined", "settings"] }
+            ]
+        }
+    }
+}
